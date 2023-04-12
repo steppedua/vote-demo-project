@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "vote.server.serversIp",
+      "type": "java.util.Map"
+    },
+    {
+      "name": "vote.server.serverQuantity",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "vote.server.serverPath",
+      "type": "java.lang.String"
+    }
+  ]
+}
