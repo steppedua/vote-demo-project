@@ -2,9 +2,11 @@ package com.steppedua.loadbalancer.service;
 
 
 import com.steppedua.loadbalancer.config.LoadBalancerConfig;
+import com.steppedua.loadbalancer.exception.VoteException;
 import com.steppedua.loadbalancer.model.VoteSaveRequestDto;
 import com.steppedua.loadbalancer.model.VoteStatisticsResponseDto;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -15,6 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 @Service
 public class LoadBalancerServiceImpl implements LoadBalancerService {
     private static final int N_THREADS = Runtime.getRuntime().availableProcessors();
@@ -23,7 +26,7 @@ public class LoadBalancerServiceImpl implements LoadBalancerService {
     private final ThreadPoolExecutor executor;
     private final LoadBalancerConfig loadBalancerConfig;
     private final RestTemplate restTemplate;
-    private final AtomicInteger atomicInteger;
+    private final AtomicInteger serverCounter;
 
     public LoadBalancerServiceImpl(LoadBalancerConfig loadBalancerConfig, RestTemplate restTemplate) {
         this.loadBalancerConfig = loadBalancerConfig;
@@ -38,34 +41,40 @@ public class LoadBalancerServiceImpl implements LoadBalancerService {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
         this.restTemplate = restTemplate;
-        atomicInteger = new AtomicInteger(INITIAL_SERVER_NUMBER);
+        serverCounter = new AtomicInteger(INITIAL_SERVER_NUMBER);
     }
 
     @Override
     public UUID voteSave(@NonNull final VoteSaveRequestDto voteSaveRequestDto) {
+        log.debug("Start voteSave method, input parameters {}", voteSaveRequestDto);
         final var submit = executor.submit(
-                new VoteSaveTask(restTemplate, loadBalancerConfig, atomicInteger, voteSaveRequestDto)
+                new VoteSaveTask(restTemplate, loadBalancerConfig, serverCounter, voteSaveRequestDto)
         );
 
         //TODO подумать, как реализовать без блокировки
         try {
+            log.debug("End voteSave method");
             return submit.get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            log.error("voteSave method error {}", e.getMessage());
+            throw new VoteException(e);
         }
     }
 
     @Override
     public VoteStatisticsResponseDto getVoteStatistics() {
+        log.debug("Start getVoteStatistics voteSave method");
         final var submit = executor.submit(
-                new VoteStatisticsTask(restTemplate, loadBalancerConfig, atomicInteger)
+                new VoteStatisticsTask(restTemplate, loadBalancerConfig, serverCounter)
         );
 
         //TODO подумать, как реализовать без блокировки
         try {
+            log.debug("End getVoteStatistics voteSave method");
             return submit.get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            log.error("getVoteStatistics method error {}", e.getMessage());
+            throw new VoteException(e);
         }
     }
 }

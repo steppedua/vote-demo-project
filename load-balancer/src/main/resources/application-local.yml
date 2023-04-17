@@ -1,0 +1,7 @@
+vote:
+  server:
+    serversIp:
+      1: ${vote.server.serversIp.1}
+      2: ${vote.server.serversIp.2}
+    serverQuantity: ${vote.server.serverQuantity}
+    serverPath: ${vote.server.serverPath}

@@ -1,10 +1,86 @@
 version: "3.9"
 services:
+  vote-service1:
+    restart: on-failure
+    container_name: vote-service1
+    image: vote-service
+    build: vote-service
+    hostname: vote-service
+    expose:
+      - '8081:8081'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/vote
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_PROFILES_ACTIVE=local
+      - server.port=8081
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      spring:
+
+  vote-service2:
+    restart: on-failure
+    container_name: vote-service2
+    image: vote-service
+    build: vote-service
+    hostname: vote-service
+    expose:
+      - '8082:8082'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/vote
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_PROFILES_ACTIVE=local
+      - server.port=8082
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      spring:
+
+  load-balancer:
+    restart: on-failure
+    container_name: load-balancer
+    image: load-balancer
+    build: load-balancer
+    hostname: load-balancer
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - vote.server.serversIp.1=8081
+      - vote.server.serversIp.2=8082
+      - vote.server.serverQuantity=2
+      - vote.server.serverPath=vote-service
+      - server.port=8090
+    depends_on:
+      postgres:
+        condition: service_started
+      vote-service1:
+        condition: service_started
+      vote-service2:
+        condition: service_started
+    networks:
+      spring:
+
   postgres:
     image: postgres:latest
+    container_name: postgres
+    build: postgres
+    hostname: postgres
     environment:
       POSTGRES_DB: "vote"
       POSTGRES_USER: "admin"
       POSTGRES_PASSWORD: "admin"
     ports:
       - "5432:5432"
+    networks:
+      spring:
+
+networks:
+  spring:
+    external: true

@@ -1,13 +1,5 @@
-vote:
-  server:
-    serversIp:
-      1: '8081'
-      2: '8082'
-    serverQuantity: '2'
-    serverPath: 'http://localhost:'
-
 server:
-  port: 8090
+  port: ${server.port}
 
 logging:
   level:

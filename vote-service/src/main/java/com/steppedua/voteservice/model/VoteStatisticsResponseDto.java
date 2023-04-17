@@ -1,7 +1,13 @@
 package com.steppedua.voteservice.model;
 
-public interface VoteStatisticsResponseDto {
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+@JsonDeserialize(using = VoteStatisticsDeserializer.class)
+public interface VoteStatisticsResponseDto {
+    @JsonProperty("countVoteValueYes")
     int getCountVoteValueYes();
+
+    @JsonProperty("countVoteValueNo")
     int getCountVoteValueNo();
 }

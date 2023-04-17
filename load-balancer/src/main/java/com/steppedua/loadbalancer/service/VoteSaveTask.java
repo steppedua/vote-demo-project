@@ -3,6 +3,8 @@ package com.steppedua.loadbalancer.service;
 
 import com.steppedua.loadbalancer.config.LoadBalancerConfig;
 import com.steppedua.loadbalancer.model.VoteSaveRequestDto;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,38 +16,38 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+@Slf4j
+@RequiredArgsConstructor
 public class VoteSaveTask implements Callable<UUID> {
-    private static final int VALUE = 1;
+    private static final int INITIAL_SERVER_NUMBER = 1;
     private final RestTemplate restTemplate;
     private final LoadBalancerConfig loadBalancerConfig;
-    private final AtomicInteger atomicInteger;
+    private final AtomicInteger serverCounter;
     private final VoteSaveRequestDto voteSaveRequestDto;
-
-    public VoteSaveTask(RestTemplate restTemplate, LoadBalancerConfig loadBalancerConfig, AtomicInteger atomicInteger, VoteSaveRequestDto voteSaveRequestDto) {
-        this.restTemplate = restTemplate;
-        this.loadBalancerConfig = loadBalancerConfig;
-        this.atomicInteger = atomicInteger;
-        this.voteSaveRequestDto = voteSaveRequestDto;
-    }
 
     @Override
     public UUID call() throws Exception {
-
-        if (atomicInteger.get() == loadBalancerConfig.getServerQuantity()) {
-            atomicInteger.set(VALUE);
+        if (serverCounter.get() == loadBalancerConfig.getServerQuantity()) {
+            serverCounter.set(INITIAL_SERVER_NUMBER);
         } else {
-            atomicInteger.incrementAndGet();
+            serverCounter.incrementAndGet();
         }
 
-        final var serverIp = loadBalancerConfig.getServersIp().get(atomicInteger.get());
+        final var serverIp = loadBalancerConfig.getServersIp().get(serverCounter.get());
+        log.debug("Parameter serverIp {}", serverIp);
+
         //todo заменить на feign client
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        HttpEntity<VoteSaveRequestDto> entity = new HttpEntity<>(voteSaveRequestDto, headers);
+        HttpEntity<VoteSaveRequestDto> requesEntity = new HttpEntity<>(voteSaveRequestDto, headers);
+        log.debug("Parameter requesEntity {}", requesEntity);
 
-        final var url = URI.create(loadBalancerConfig.getServerPath() + serverIp + "/api/v1/vote/");
-        final var uuidResponseEntity = restTemplate.postForEntity(url, entity, UUID.class);
+        final var uri = URI.create("http://" + loadBalancerConfig.getServerPath() + ":" + serverIp + "/api/v1/vote/");
+        log.debug("Parameter uri {}", uri);
+
+        final var uuidResponseEntity = restTemplate.postForEntity(uri, requesEntity, UUID.class);
+        log.debug("Parameter uuidResponseEntity {}", uuidResponseEntity);
+
         return uuidResponseEntity.getBody();
     }
 }
