@@ -23,8 +23,7 @@ public class VoteServiceImpl implements VoteService {
     @Transactional
     public UUID saveVote(@NonNull final VoteSaveRequestDto voteSaveRequestDto) {
         log.debug("Start saveVote method");
-        final var voteEntity = new VoteEntity()
-                .setVoteValue(voteSaveRequestDto.getVoteValue());
+        final var voteEntity = new VoteEntity(voteSaveRequestDto.getVoteValue());
 
         voteRepository.save(voteEntity);
         log.debug("End saveVote method");

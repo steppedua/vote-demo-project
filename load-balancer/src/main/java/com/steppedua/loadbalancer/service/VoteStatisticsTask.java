@@ -20,7 +20,7 @@ public class VoteStatisticsTask implements Callable<VoteStatisticsResponseDto> {
     private final AtomicInteger serverCounter;
 
     @Override
-    public VoteStatisticsResponseDto call() throws Exception {
+    public VoteStatisticsResponseDto call() {
         if (serverCounter.get() == loadBalancerConfig.getServerQuantity()) {
             serverCounter.set(INITIAL_SERVER_NUMBER);
         } else {
@@ -30,10 +30,14 @@ public class VoteStatisticsTask implements Callable<VoteStatisticsResponseDto> {
         final var serverIp = loadBalancerConfig.getServersIp().get(serverCounter.get());
         log.debug("Parameter serverIp {}", serverIp);
 
-        //todo заменить на feign client
+        //TODO заменить на feign client
         final var uri = URI.create("http://" + loadBalancerConfig.getServerPath() + ":" + serverIp + "/api/v1/vote/statistics");
         log.debug("Parameter uri {}", uri);
 
-        return restTemplate.getForObject(uri, VoteStatisticsResponseDto.class);
+        try {
+            return restTemplate.getForObject(uri, VoteStatisticsResponseDto.class);
+        } catch (RuntimeException e) {
+            throw new RuntimeException();
+        }
     }
 }

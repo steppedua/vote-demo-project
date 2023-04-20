@@ -6,7 +6,6 @@ import com.steppedua.voteservice.model.VoteStatisticsResponseDto;
 import com.steppedua.voteservice.service.VoteService;
 import com.steppedua.voteservice.util.VoteUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 

@@ -32,6 +32,10 @@ public class VoteEntity {
     @Column(name = "vote_value", nullable = false)
     private Vote voteValue;
 
+    public VoteEntity(Vote voteValue) {
+        this.voteValue = voteValue;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

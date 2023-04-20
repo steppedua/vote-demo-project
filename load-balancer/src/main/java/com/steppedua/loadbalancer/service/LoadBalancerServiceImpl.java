@@ -2,7 +2,6 @@ package com.steppedua.loadbalancer.service;
 
 
 import com.steppedua.loadbalancer.config.LoadBalancerConfig;
-import com.steppedua.loadbalancer.exception.VoteException;
 import com.steppedua.loadbalancer.model.VoteSaveRequestDto;
 import com.steppedua.loadbalancer.model.VoteStatisticsResponseDto;
 import lombok.NonNull;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -44,37 +43,29 @@ public class LoadBalancerServiceImpl implements LoadBalancerService {
         serverCounter = new AtomicInteger(INITIAL_SERVER_NUMBER);
     }
 
+    //TODO а нужен ли @Transactional?
     @Override
-    public UUID voteSave(@NonNull final VoteSaveRequestDto voteSaveRequestDto) {
+    public Future<UUID> voteSave(@NonNull final VoteSaveRequestDto voteSaveRequestDto) {
         log.debug("Start voteSave method, input parameters {}", voteSaveRequestDto);
         final var submit = executor.submit(
                 new VoteSaveTask(restTemplate, loadBalancerConfig, serverCounter, voteSaveRequestDto)
         );
 
-        //TODO подумать, как реализовать без блокировки
-        try {
-            log.debug("End voteSave method");
-            return submit.get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("voteSave method error {}", e.getMessage());
-            throw new VoteException(e);
-        }
+        log.debug("End voteSave method");
+        return submit;
+        //TODO подумать где надо сделать shutdown
     }
 
+    //TODO а нужен ли @Transactional?
     @Override
-    public VoteStatisticsResponseDto getVoteStatistics() {
+    public Future<VoteStatisticsResponseDto> getVoteStatistics() {
         log.debug("Start getVoteStatistics voteSave method");
         final var submit = executor.submit(
                 new VoteStatisticsTask(restTemplate, loadBalancerConfig, serverCounter)
         );
 
-        //TODO подумать, как реализовать без блокировки
-        try {
-            log.debug("End getVoteStatistics voteSave method");
-            return submit.get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("getVoteStatistics method error {}", e.getMessage());
-            throw new VoteException(e);
-        }
+        log.debug("End getVoteStatistics voteSave method");
+        return submit;
+        //TODO подумать где надо сделать shutdown
     }
 }

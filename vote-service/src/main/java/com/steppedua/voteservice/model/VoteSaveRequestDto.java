@@ -1,13 +1,14 @@
 package com.steppedua.voteservice.model;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.steppedua.voteservice.entity.Vote;
 import lombok.Data;
-
-import java.util.UUID;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class VoteSaveRequestDto {
-    private final UUID userId;
-    private final Vote voteValue;
+    @JsonProperty("voteValue")
+    private Vote voteValue;
 }
