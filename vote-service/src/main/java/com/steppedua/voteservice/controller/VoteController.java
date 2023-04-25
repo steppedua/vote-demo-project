@@ -22,8 +22,7 @@ public class VoteController {
 
     @PostMapping("/")
     public UUID saveVote(@Valid @RequestBody VoteSaveRequestDto voteSaveRequestDto) {
-        final UUID uuid = voteService.saveVote(voteSaveRequestDto);
-        return uuid;
+        return voteService.saveVote(voteSaveRequestDto);
     }
 
     @GetMapping("/statistics")
