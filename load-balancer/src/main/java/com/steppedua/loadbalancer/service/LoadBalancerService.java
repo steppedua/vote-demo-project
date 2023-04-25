@@ -4,10 +4,10 @@ import com.steppedua.loadbalancer.model.VoteSaveRequestDto;
 import com.steppedua.loadbalancer.model.VoteStatisticsResponseDto;
 
 import java.util.UUID;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 public interface LoadBalancerService {
-    Future<UUID> voteSave(VoteSaveRequestDto voteSaveRequestDto);
+    CompletableFuture<UUID> voteSave(VoteSaveRequestDto voteSaveRequestDto);
 
-    Future<VoteStatisticsResponseDto> getVoteStatistics();
+    CompletableFuture<VoteStatisticsResponseDto> getVoteStatistics();
 }

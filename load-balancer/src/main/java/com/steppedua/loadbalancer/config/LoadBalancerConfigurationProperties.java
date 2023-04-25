@@ -9,7 +9,7 @@ import java.util.Map;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "vote.server")
-public class LoadBalancerConfig {
+public class LoadBalancerConfigurationProperties {
     private Map<Integer, String> serversIp;
     private Integer serverQuantity;
     private String serverPath;

@@ -1,43 +1,43 @@
 package com.steppedua.loadbalancer.service;
 
-import com.steppedua.loadbalancer.config.LoadBalancerConfig;
+import com.steppedua.loadbalancer.config.LoadBalancerConfigurationProperties;
+import com.steppedua.loadbalancer.exception.RestTemplateException;
 import com.steppedua.loadbalancer.model.VoteStatisticsResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.steppedua.loadbalancer.util.LoadBalancerServerUtil.INITIAL_SERVER_NUMBER;
 
 @Slf4j
 @RequiredArgsConstructor
-public class VoteStatisticsTask implements Callable<VoteStatisticsResponseDto> {
-
-    private static final int INITIAL_SERVER_NUMBER = 1;
+public class VoteStatisticsTask {
     private final RestTemplate restTemplate;
-    private final LoadBalancerConfig loadBalancerConfig;
+    private final LoadBalancerConfigurationProperties loadBalancerConfigurationProperties;
     private final AtomicInteger serverCounter;
 
-    @Override
-    public VoteStatisticsResponseDto call() {
-        if (serverCounter.get() == loadBalancerConfig.getServerQuantity()) {
+    public VoteStatisticsResponseDto voteStatisticsTask() {
+        if (serverCounter.get() == loadBalancerConfigurationProperties.getServerQuantity()) {
             serverCounter.set(INITIAL_SERVER_NUMBER);
         } else {
             serverCounter.incrementAndGet();
         }
 
-        final var serverIp = loadBalancerConfig.getServersIp().get(serverCounter.get());
+        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverCounter.get());
         log.debug("Parameter serverIp {}", serverIp);
 
         //TODO заменить на feign client
-        final var uri = URI.create("http://" + loadBalancerConfig.getServerPath() + ":" + serverIp + "/api/v1/vote/statistics");
+        final var uri = URI.create("http://" + loadBalancerConfigurationProperties.getServerPath() + ":" + serverIp + "/api/v1/vote/statistics");
         log.debug("Parameter uri {}", uri);
 
         try {
             return restTemplate.getForObject(uri, VoteStatisticsResponseDto.class);
         } catch (RuntimeException e) {
-            throw new RuntimeException();
+            log.error("Exception in voteStatisticsTask method with message: {}", e.getMessage());
+            throw new RestTemplateException(e.getMessage(), e);
         }
     }
 }

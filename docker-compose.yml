@@ -18,6 +18,8 @@ services:
     depends_on:
       postgres:
         condition: service_started
+    #    deploy:
+    #      replicas: 3 Если мы хотим сделать 3 экземпляра одного сервиса
     networks:
       spring:
 

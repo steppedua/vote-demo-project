@@ -1,7 +1,8 @@
 package com.steppedua.loadbalancer.service;
 
 
-import com.steppedua.loadbalancer.config.LoadBalancerConfig;
+import com.steppedua.loadbalancer.config.LoadBalancerConfigurationProperties;
+import com.steppedua.loadbalancer.exception.RestTemplateException;
 import com.steppedua.loadbalancer.model.VoteSaveRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,27 +14,26 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.steppedua.loadbalancer.util.LoadBalancerServerUtil.INITIAL_SERVER_NUMBER;
 
 @Slf4j
 @RequiredArgsConstructor
-public class VoteSaveTask implements Callable<UUID> {
-    private static final int INITIAL_SERVER_NUMBER = 1;
+public class VoteSaveTask {
     private final RestTemplate restTemplate;
-    private final LoadBalancerConfig loadBalancerConfig;
+    private final LoadBalancerConfigurationProperties loadBalancerConfigurationProperties;
     private final AtomicInteger serverCounter;
     private final VoteSaveRequestDto voteSaveRequestDto;
 
-    @Override
-    public UUID call() {
-        if (serverCounter.get() == loadBalancerConfig.getServerQuantity()) {
+    public UUID voteSaveTask() {
+        if (serverCounter.get() == loadBalancerConfigurationProperties.getServerQuantity()) {
             serverCounter.set(INITIAL_SERVER_NUMBER);
         } else {
             serverCounter.incrementAndGet();
         }
 
-        final var serverIp = loadBalancerConfig.getServersIp().get(serverCounter.get());
+        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverCounter.get());
         log.debug("Parameter serverIp {}", serverIp);
 
         //TODO заменить на feign client
@@ -42,7 +42,7 @@ public class VoteSaveTask implements Callable<UUID> {
         HttpEntity<VoteSaveRequestDto> requesEntity = new HttpEntity<>(voteSaveRequestDto, headers);
         log.debug("Parameter requesEntity {}", requesEntity);
 
-        final var uri = URI.create("http://" + loadBalancerConfig.getServerPath() + ":" + serverIp + "/api/v1/vote/");
+        final var uri = URI.create("http://" + loadBalancerConfigurationProperties.getServerPath() + ":" + serverIp + "/api/v1/vote/");
         log.debug("Parameter uri {}", uri);
 
         try {
@@ -51,7 +51,8 @@ public class VoteSaveTask implements Callable<UUID> {
 
             return uuidResponseEntity.getBody();
         } catch (RuntimeException e) {
-            throw new RuntimeException();
+            log.error("Exception in voteSaveTask method with message: {}", e.getMessage());
+            throw new RestTemplateException(e.getMessage(), e);
         }
     }
 }

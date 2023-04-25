@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.concurrent.Future;
 
 @RestController
 @RequestMapping(LoadBalancerServerUtil.BASE_URI + "/vote")
@@ -18,10 +17,15 @@ import java.util.concurrent.Future;
 public class LoadBalancerController {
     private final LoadBalancerService loadBalancerService;
 
-    //TODO а как тут быть, если у нас Future возвращаться должен?
-    @PostMapping("/")
+    /**
+     * Метод для сохранения голоса
+     *
+     * @param voteSaveRequestDto - данные голоса для сохранения в БД
+     * @return URI сохраненного голоса в БД
+     */
+    @PostMapping
     public ResponseEntity<Void> saveVote(@RequestBody VoteSaveRequestDto voteSaveRequestDto) {
-        final var uuid = loadBalancerService.voteSave(voteSaveRequestDto);
+        final var uuid = loadBalancerService.voteSave(voteSaveRequestDto).join();
         final URI uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -31,14 +35,13 @@ public class LoadBalancerController {
         return ResponseEntity.created(uri).build();
     }
 
-    //TODO тут при запросе выдается
-    // {
-    //    "done": false,
-    //    "cancelled": false
-    // }
-    // Это появилось благодаря Future, что делать в таком случае?
+    /**
+     * Метод для получения статистики голосов
+     *
+     * @return статистика голосов
+     */
     @GetMapping("/statistics")
-    public Future<VoteStatisticsResponseDto> getVoteStatistics() {
-        return loadBalancerService.getVoteStatistics();
+    public VoteStatisticsResponseDto getVoteStatistics() {
+        return loadBalancerService.getVoteStatistics().join();
     }
 }
