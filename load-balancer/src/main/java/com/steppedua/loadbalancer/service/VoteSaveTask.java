@@ -10,13 +10,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.steppedua.loadbalancer.util.LoadBalancerServerUtil.INITIAL_SERVER_NUMBER;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,27 +25,29 @@ public class VoteSaveTask {
     private final VoteSaveRequestDto voteSaveRequestDto;
 
     public UUID voteSaveTask() {
-        if (serverCounter.get() == loadBalancerConfigurationProperties.getServerQuantity()) {
-            serverCounter.set(INITIAL_SERVER_NUMBER);
-        } else {
-            serverCounter.incrementAndGet();
-        }
+        final var serverNumber = serverCounter.incrementAndGet() % loadBalancerConfigurationProperties.getServerQuantity();
 
-        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverCounter.get());
+        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverNumber);
         log.debug("Parameter serverIp {}", serverIp);
 
-        //TODO заменить на feign client
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         HttpEntity<VoteSaveRequestDto> requesEntity = new HttpEntity<>(voteSaveRequestDto, headers);
         log.debug("Parameter requesEntity {}", requesEntity);
 
-        final var uri = URI.create("http://" + loadBalancerConfigurationProperties.getServerPath() + ":" + serverIp + "/api/v1/vote/");
+        final var uri = UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(loadBalancerConfigurationProperties.getServerPath())
+                .port(serverIp)
+                .path("/api/v1/vote/")
+                .build()
+                .toUri();
         log.debug("Parameter uri {}", uri);
 
+        //TODO заменить на feign client
         try {
             final var uuidResponseEntity = restTemplate.postForEntity(uri, requesEntity, UUID.class);
-            log.debug("Parameter uuidResponseEntity {}", uuidResponseEntity);
+            log.debug("Parameter uuidResponseEntity {} from serverIp {}", uuidResponseEntity, serverIp);
 
             return uuidResponseEntity.getBody();
         } catch (RuntimeException e) {

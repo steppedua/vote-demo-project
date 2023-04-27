@@ -6,11 +6,9 @@ import com.steppedua.loadbalancer.model.VoteStatisticsResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.steppedua.loadbalancer.util.LoadBalancerServerUtil.INITIAL_SERVER_NUMBER;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,21 +18,26 @@ public class VoteStatisticsTask {
     private final AtomicInteger serverCounter;
 
     public VoteStatisticsResponseDto voteStatisticsTask() {
-        if (serverCounter.get() == loadBalancerConfigurationProperties.getServerQuantity()) {
-            serverCounter.set(INITIAL_SERVER_NUMBER);
-        } else {
-            serverCounter.incrementAndGet();
-        }
+        final var serverNumber = serverCounter.incrementAndGet() % loadBalancerConfigurationProperties.getServerQuantity();
 
-        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverCounter.get());
+        final var serverIp = loadBalancerConfigurationProperties.getServersIp().get(serverNumber);
         log.debug("Parameter serverIp {}", serverIp);
 
-        //TODO заменить на feign client
-        final var uri = URI.create("http://" + loadBalancerConfigurationProperties.getServerPath() + ":" + serverIp + "/api/v1/vote/statistics");
+        final var uri = UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(loadBalancerConfigurationProperties.getServerPath())
+                .port(serverIp)
+                .path("/api/v1/vote/statistics")
+                .build()
+                .toUri();
         log.debug("Parameter uri {}", uri);
 
+        //TODO заменить на feign client
         try {
-            return restTemplate.getForObject(uri, VoteStatisticsResponseDto.class);
+            final var statisticsResponse = restTemplate.getForObject(uri, VoteStatisticsResponseDto.class);
+            log.debug("Parameter statisticsResponse {} from serverIp {}", statisticsResponse, serverIp);
+
+            return statisticsResponse;
         } catch (RuntimeException e) {
             log.error("Exception in voteStatisticsTask method with message: {}", e.getMessage());
             throw new RestTemplateException(e.getMessage(), e);

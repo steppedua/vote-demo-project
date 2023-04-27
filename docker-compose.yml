@@ -8,6 +8,7 @@ services:
     hostname: vote-service
     expose:
       - '8081:8081'
+#      - '8081-8083:8081' - это если мы хотим сделать 3 экземпляра одного сервиса и запустить на разных портах
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/vote
       - SPRING_DATASOURCE_USERNAME=admin
@@ -54,8 +55,8 @@ services:
       - "8090:8090"
     environment:
       - SPRING_PROFILES_ACTIVE=local
-      - vote.server.serversIp.1=8081
-      - vote.server.serversIp.2=8082
+      - vote.server.serversIp.0=8081
+      - vote.server.serversIp.1=8082
       - vote.server.serverQuantity=2
       - vote.server.serverPath=vote-service
       - server.port=8090
